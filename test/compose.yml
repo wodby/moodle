@@ -1,0 +1,42 @@
+services:
+  mariadb:
+    image: mariadb:11.8
+    environment:
+      MARIADB_ROOT_PASSWORD: root
+      MARIADB_DATABASE: moodle
+      MARIADB_USER: moodle
+      MARIADB_PASSWORD: moodle
+    command: [--character-set-server=utf8mb4, --collation-server=utf8mb4_unicode_ci]
+
+  moodle:
+    image: $IMAGE
+    environment: &moodle-env
+      DB_HOST: mariadb
+      DB_NAME: moodle
+      DB_USERNAME: moodle
+      DB_PASSWORD: moodle
+      DB_KIND: mariadb
+      MOODLE_WWWROOT: http://nginx
+      MOODLE_ADMIN_PASSWORD: Test-pass-1234!
+      MOODLE_SITE_FULLNAME: Moodle test
+      MOODLE_SITE_SHORTNAME: test
+      PHP_FPM_CLEAR_ENV: "no"
+    volumes:
+      - files:/mnt/files
+
+  cron:
+    image: $IMAGE
+    command: moodle-cron
+    environment: *moodle-env
+    volumes:
+      - files:/mnt/files
+
+  nginx:
+    image: $NGINX_IMAGE
+    environment:
+      NGINX_BACKEND_HOST: moodle
+    depends_on:
+      - moodle
+
+volumes:
+  files:

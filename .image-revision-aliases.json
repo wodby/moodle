@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "image": "wodby/moodle",
+  "versions": [
+    {
+      "version": {
+        "env": "MOODLE53"
+      },
+      "variants": [
+        {
+          "short": [
+            "{minor}",
+            "{major}"
+          ],
+          "full": "{version}"
+        },
+        {
+          "short": [
+            "{minor}-nginx",
+            "{major}-nginx"
+          ],
+          "full": "{version}-nginx"
+        }
+      ]
+    }
+  ]
+}
