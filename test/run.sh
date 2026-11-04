@@ -42,7 +42,8 @@ moodle moodle-update
 moodle php -r 'define("CLI_SCRIPT", true); require "config.php"; exit(get_admin()->username === "admin" && $SITE->shortname === "test" ? 0 : 1);'
 
 echo "Upgrading an installed site"
-moodle moodle-update | grep -q "No upgrade needed"
+# Moodle prints this on stderr.
+moodle moodle-update 2>&1 | grep "No upgrade needed"
 
 check /login/index.php 200
 check "/theme/styles.php?theme=boost&rev=1_1&type=all" 200
