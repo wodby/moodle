@@ -1,0 +1,48 @@
+{{ $static := (getenv "NGINX_STATIC_EXT_REGEX" "css|cur|js|jpe?g|gif|htc|ico|png|xml|otf|ttf|eot|woff|woff2|svg|mp4|svgz|ogg|ogv|pdf|pptx?|zip|tgz|gz|rar|bz2|doc|xls|exe|tar|mid|midi|wav|bmp|rtf|txt|map|webp") }}
+
+include fastcgi.conf;
+
+index index.php index.html;
+
+# Files in Moodle's web root that are never served.
+location ~ (/vendor/|/node_modules/|composer\.json|/readme|/README|readme\.txt|/upgrade\.txt|/UPGRADING\.md|db/install\.xml|/fixtures/|/behat/|phpunit\.xml|\.lock|environment\.xml) {
+    deny all;
+    return 404;
+}
+
+# PHP scripts, including the slash arguments Moodle appends to them, such as
+# /pluginfile.php/12/mod_resource/content/0/file.pdf. Requests for scripts
+# that don't exist go to Moodle's router.
+location ~ [^/]\.php(/|$) {
+    fastcgi_split_path_info ^(.+?\.php)(/.*)$;
+    # try_files resets the path info, so it is kept first.
+    set $path_info $fastcgi_path_info;
+    try_files $fastcgi_script_name $fastcgi_script_name/ /r.php$is_args$args;
+    fastcgi_pass php;
+    # A fastcgi_param here stops the server-level ones from being inherited,
+    # so they are included again.
+    include fastcgi.conf;
+    fastcgi_param PATH_INFO $path_info;
+    track_uploads {{ getenv "NGINX_TRACK_UPLOADS" "uploads 60s" }};
+}
+
+location ~* ^.+\.(?:{{ $static }})$ {
+    access_log {{ getenv "NGINX_STATIC_ACCESS_LOG" "off" }};
+    tcp_nodelay {{ getenv "NGINX_STATIC_TCP_NODELAY" "off" }};
+    expires {{ getenv "NGINX_STATIC_EXPIRES" "1y" }};
+
+    add_header Pragma "cache";
+    add_header Cache-Control "public";
+
+    open_file_cache {{ getenv "NGINX_STATIC_OPEN_FILE_CACHE" "max=1000 inactive=30s" }};
+    open_file_cache_valid {{ getenv "NGINX_STATIC_OPEN_FILE_CACHE_VALID" "30s" }};
+    open_file_cache_min_uses {{ getenv "NGINX_STATIC_OPEN_FILE_CACHE_MIN_USES" "2" }};
+    open_file_cache_errors {{ getenv "NGINX_STATIC_OPEN_FILE_CACHE_ERRORS" "off" }};
+
+    try_files $uri /r.php$is_args$args;
+}
+
+# Everything else is a file, a directory index or a route of Moodle's router.
+location / {
+    try_files $uri $uri/ /r.php$is_args$args;
+}
