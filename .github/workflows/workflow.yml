@@ -33,6 +33,7 @@ jobs:
   build:
     needs: setup
     strategy:
+      fail-fast: false
       matrix:
         moodle: ${{ fromJson(needs.setup.outputs.moodle-versions) }}
         arch:

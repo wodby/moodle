@@ -35,7 +35,7 @@ check() {
 }
 
 echo "Checking the installed version"
-moodle sh -c 'release=$(php -r "define(\"MOODLE_INTERNAL\", true); require \"public/version.php\"; echo \$release;"); case "${release}" in "${MOODLE_VER%.0} "*) echo "${release}" ;; *) echo >&2 "Unexpected release ${release}"; exit 1 ;; esac'
+moodle sh -c 'release=$(sed -n "s/^\$release *= *.\([^ ]*\) .*/\1/p" public/version.php); case "${release}" in "${MOODLE_VER%.0}") echo "Moodle ${release}" ;; *) echo >&2 "Unexpected release ${release}"; exit 1 ;; esac'
 
 echo "Installing"
 moodle moodle-update
