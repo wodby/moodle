@@ -13,7 +13,7 @@ trap cleanup EXIT
 
 docker compose up -d mariadb moodle
 docker compose exec -T moodle sh -c 'until php -r "exit(@fsockopen(\"mariadb\", 3306) ? 0 : 1);"; do sleep 1; done'
-docker compose up -d nginx cron
+docker compose up -d nginx
 
 moodle() {
     docker compose exec -T moodle "$@"
@@ -54,11 +54,15 @@ check /composer.json 404
 check /.git/config 403
 
 echo "Running cron"
+docker compose up -d cron
+# grep reads all of the logs: with -q it would close the pipe early, which fails under pipefail.
 for i in $(seq 1 30); do
-    docker compose logs cron | grep -q "Cron run completed correctly" && break
+    if docker compose logs cron 2>&1 | grep "Cron run completed correctly" >/dev/null; then
+        break
+    fi
     sleep 2
 done
-docker compose logs cron | grep -q "Cron run completed correctly"
+docker compose logs cron 2>&1 | grep "Cron run completed correctly" >/dev/null
 
 echo "Stopping cron"
 docker compose stop -t 20 cron
