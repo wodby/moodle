@@ -3,6 +3,7 @@
 BASE_IMAGE_REPOSITORY := wodby/php
 BASE_IMAGE_VERSION_SUFFIX :=
 
+BASE_IMAGE_DIGEST_8.4 := sha256:b464606f70745b777cb91f8e9ae7a20d22c4b76d1b493ad77e1ab95f9960ac89
 BASE_IMAGE_DIGEST_8.4-r11 := sha256:c968e9eac983eab34b5873f4c5dcd4cfbf53673ba3fe14fa87ce037379262226
 
 # The Nginx variant's base, refreshed with the base image pins.
