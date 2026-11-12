@@ -3,7 +3,7 @@
 # Accept legacy build arguments during the image revision transition.
 BASE_IMAGE_REVISION ?= $(BASE_IMAGE_STABILITY_TAG)
 
-MOODLE_VER ?= 5.3.0
+MOODLE_VER ?= 5.3.1
 MOODLE_VER_MINOR := $(basename $(MOODLE_VER))
 MOODLE_VER_MAJOR := $(basename $(MOODLE_VER_MINOR))
 
