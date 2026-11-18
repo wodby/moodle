@@ -11,6 +11,13 @@ on:
 
   pull_request:
 
+# Runs of one event and branch or tag never overlap, so an older main run
+# cannot finish last and move floating tags back. A newer pending run of the
+# same event replaces an older one; other events never replace each other.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: false
+
 env:
   BASE_IMAGE_REVISION: r16
   MOODLE53: '5.3.1'
@@ -52,7 +59,8 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-      - name: build, test and push
+      - name: build and test
+        id: build-image
         env:
           MOODLE_VER: ${{ matrix.moodle.version }}
           PHP_VER: ${{ matrix.moodle.php }}
@@ -60,7 +68,18 @@ jobs:
         run: |
           make
           make test
-          if [[ "${{ github.event_name }}" != pull_request ]]; then make push; fi
+          echo "php=$(make --no-print-directory -s image-ref)" >> "$GITHUB_OUTPUT"
+          echo "nginx=$(make --no-print-directory -s nginx-image-ref)" >> "$GITHUB_OUTPUT"
+      - name: Push PHP architecture image
+        if: github.event_name != 'pull_request'
+        uses: wodby/images/.github/actions/arch-image-push@2da5f02ec3dffc5cb3331152e01e3c89874b0bfe
+        with:
+          image: ${{ steps.build-image.outputs.php }}
+      - name: Push Nginx architecture image
+        if: github.event_name != 'pull_request'
+        uses: wodby/images/.github/actions/arch-image-push@2da5f02ec3dffc5cb3331152e01e3c89874b0bfe
+        with:
+          image: ${{ steps.build-image.outputs.nginx }}
 
   push:
     if: github.event_name != 'pull_request'
@@ -77,6 +96,7 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
+      - uses: wodby/images/.github/actions/arch-image-pins@2da5f02ec3dffc5cb3331152e01e3c89874b0bfe
       - uses: ./.github/actions
         with:
           version: ${{ matrix.moodle.version }}
