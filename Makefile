@@ -48,14 +48,27 @@ push:
 	docker push $(REPO):$(PHP_TAG)
 	docker push $(REPO):$(NGINX_TAG)
 
+# CI combines the exact architecture images this workflow run pushed; see
+# wodby/images arch-image-pins. Per-architecture tags are shared by every run,
+# so an overlapping run may already have replaced one of them.
+arch-image = $(if $(ARCH_IMAGE_PINS),$(or $(shell cat '$(ARCH_IMAGE_PINS)/$(subst :,_,$(subst /,_,$(1)))' 2>/dev/null),$(error No digest of $(1) was pushed by this workflow run)),$(1))
+
 # Combines the architecture images of $(SOURCE_TAG) under $(IMAGETOOLS_TAG).
 buildx-imagetools-create:
 	docker buildx imagetools create -t $(REPO):$(IMAGETOOLS_TAG) \
-				$(REPO):$(SOURCE_TAG)-amd64 \
-				$(REPO):$(SOURCE_TAG)-arm64
+				$(call arch-image,$(REPO):$(SOURCE_TAG)-amd64) \
+				$(call arch-image,$(REPO):$(SOURCE_TAG)-arm64)
 
 shell:
 	docker run --rm --name $(NAME) -i -t $(REPO):$(PHP_TAG) /bin/bash
 
 clean:
 	-docker rm -f $(NAME)
+
+# Print the images make builds and pushes; CI pushes exactly these references.
+.PHONY: image-ref nginx-image-ref
+image-ref:
+	@printf '%s\n' '$(REPO):$(PHP_TAG)'
+
+nginx-image-ref:
+	@printf '%s\n' '$(REPO):$(NGINX_TAG)'
